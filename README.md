@@ -4,9 +4,7 @@
 
 ## about
 
-![procedurally generated tree](https://raw.githubusercontent.com/eastriverlee/l-system/master/screenshot0.png)
-
-![procedurally generated tree](https://raw.githubusercontent.com/eastriverlee/l-system/master/screenshot1.png)
+![procedurally generated tree](https://raw.githubusercontent.com/eastriverlee/l-system/master/screencapture.gif)
 
 this is a proof of concept l-system tree/plant generator using lineRenderer of unity engine.  
 [video demonstration](https://youtu.be/Fqe_OUSSPmI)  
