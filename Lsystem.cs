@@ -27,11 +27,11 @@ namespace Tree
 		[SerializeField] private int iteration = 4;
 		[SerializeField] private float length = .1f;
 		[SerializeField] private float width = .1f;
-		[SerializeField] private float variable = 3f;
 		[SerializeField] private float angle = 30;
 		[SerializeField] private GameObject branch;
-		//'branch' is a prefab containing {a: lineRenderer of 1 positionCount, b: script named 'Twig.cs'}.
 		[Range(0, 100)] public int speed = 100;
+		[Range(0f, 10f)] public float thicknessVariety = 3;
+		[Range(0f, 10f)] public int angleVariety = 10;
 		private const string axiom = "x";
 		private States states;
 		private Rule rules;
@@ -55,10 +55,13 @@ namespace Tree
 			grow();
 		}
 
+private bool stop = false;
 		void Update()
 		{
-			if (Global.time < Global.timeLimit)
+			if (!stop && Global.time < Global.timeLimit)
 				Global.time += Time.deltaTime;
+			else
+				stop = true;
 		}
 
 private GameObject parent;
@@ -83,16 +86,17 @@ private Twig twig;
 		}
 		private void grow()
 		{
-			float maxWidth = width * variable;
+			float resistance = 10f - angleVariety;
+			float maxWidth = width * thicknessVariety;
 			foreach (char c in currentString)
 			switch (c)
 			{
 				case '+':
-					cursor.Rotate(randomize(angle, 2) * (randBool() ? Vector3.forward : Vector3.right));
+					cursor.Rotate(randomize(angle, resistance) * (randBool() ? Vector3.forward : Vector3.back));
 					prepareBranch();
 					break;
 				case '-':
-					cursor.Rotate(randomize(angle, 2) * (randBool() ? Vector3.back : Vector3.left));
+					cursor.Rotate(randomize(angle, resistance) * (randBool() ? Vector3.right : Vector3.left));
 					prepareBranch();
 					break;
 				case '[':
@@ -125,7 +129,6 @@ private Twig twig;
 					cursor.Translate(Vector3.up * length);
 					twig.startTime = birth;
 					twig.endTime = birth + interval;
-					twig.root = root;
 					twig.maxWidth = maxWidth;
 					twig.destination = cursor.position;
 					isBranching = false;
