@@ -6,27 +6,38 @@ using System;
 
 namespace Tree
 {
-	using Rule = Dictionary<char, string>;
+	using Rules = Dictionary<char, string>;
 	using States = Stack<State>;
 
 	public class State
 	{
+		public Vector3 position;
+		public Quaternion rotation;
+		public GameObject instance;
 		public State(Transform transform, GameObject instance_)
 		{
 			position = transform.position;
 			rotation = transform.rotation;
 			instance = instance_;
 		}
-		public Vector3 position;
-		public Quaternion rotation;
-		public GameObject instance;
+	}
+
+	[Serializable] public struct Rule
+	{
+		public char target;
+		public string replacement;
+		public Rule(char target, string replacement)
+		{
+			this.target = target;
+			this.replacement = replacement;
+		}
 	}
 
 	public class Lsystem : MonoBehaviour
 	{
 		[SerializeField] private int iteration = 4;
-		[SerializeField] private float length = .1f;
-		[SerializeField] private float width = .1f;
+		[SerializeField] private float length = .05f;
+		[SerializeField] private float width = .02f;
 		[SerializeField] private float angle = 30;
 		[SerializeField] private GameObject branch;
 		[Range(0, 100)] public int speed = 100;
@@ -35,7 +46,11 @@ namespace Tree
 		[Range(0f, 1f)] public float age = 0;
 		private const string axiom = "x";
 		private States states;
-		private Rule rules;
+		public Rule[] rawRules = new Rule[] { 
+			new Rule('x',"[f-[[x]+x]+f[+fx]-x]"),
+			new Rule('f',"ff")
+		};
+		private Rules rules;
 		private string currentString = "";
 		private Vector3 root;
 		private int stringLength;
@@ -45,15 +60,19 @@ namespace Tree
 		{
 			root = transform.position;
 			states = new States();
-			rules = new Rule {
-	  			{'x',"[f-[[x]+x]+f[+fx]-x]"},
-	    		{'f',"ff"}
-			};
+			rules = makeRules();
 			parent = gameObject;
 			interval = 25f / speed;
 			cursor = new GameObject().transform;
 			generate();
 			grow();
+		}
+		private Rules makeRules()
+		{
+			Rules rules = new Rules();
+			foreach (var rawRule in rawRules)
+				rules.Add(rawRule.target, rawRule.replacement);
+			return (rules);
 		}
 
 private bool stop = false;
@@ -123,10 +142,10 @@ private Twig twig;
 					{
 						instance = Instantiate(branch);
 						twig = instance.GetComponent<Twig>();
-						instance.transform.SetParent(parent.transform);
 						line = instance.GetComponent<LineRenderer>();
 						line.SetPosition(0, cursor.position);
 						line.SetPosition(1, cursor.position);
+						line.SetWidth(width, width);
 						birth += interval;
 					}
 					else
@@ -134,6 +153,7 @@ private Twig twig;
 						twig = instance.GetComponent<Twig>();
 						line = instance.GetComponent<LineRenderer>();
 					}
+					instance.transform.SetParent(parent.transform, false);
 					cursor.Translate(Vector3.up * length);
 					twig.startTime = birth;
 					twig.endTime = birth + interval;
@@ -141,6 +161,7 @@ private Twig twig;
 					twig.destination = cursor.position;
 					isBranching = false;
 					Global.timeLimit = Mathf.Max(twig.endTime, Global.timeLimit);
+					parent = instance;
 					break;
 				default:
 					break;

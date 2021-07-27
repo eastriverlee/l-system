@@ -14,7 +14,7 @@ this is a proof of concept of l-system tree/plant generator or a growth simulato
 1. copy scripts to your projects.
 2. add a `+ > Empty` gameObject of any name with `Lsystem.cs` script attached.
 3. make a prefab of  `+ > Effects > line`.
-4. adjust width and end cap vertices *(ex: 0.02, 10)* of the prefab.
+4. adjust end cap vertices of the prefab if you wish.
 5. attach `Twig.cs` script to the prefab.
 6. set `Branch` parameter of the first added gameObject as the prefab.
 7. **BUILD && RUN**.
