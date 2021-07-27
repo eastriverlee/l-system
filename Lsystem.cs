@@ -32,6 +32,7 @@ namespace Tree
 		[Range(0, 100)] public int speed = 100;
 		[Range(0f, 10f)] public float thicknessVariety = 3;
 		[Range(0f, 10f)] public int angleVariety = 10;
+		[Range(0f, 1f)] public float age = 0;
 		private const string axiom = "x";
 		private States states;
 		private Rule rules;
@@ -59,9 +60,15 @@ private bool stop = false;
 		void Update()
 		{
 			if (!stop && Global.time < Global.timeLimit)
+			{
 				Global.time += Time.deltaTime;
+				age = Mathf.Min(1, Global.time / Global.timeLimit);
+			}
 			else
+			{
+				Global.time = Global.timeLimit * age;
 				stop = true;
+			}
 		}
 
 private GameObject parent;
@@ -119,6 +126,7 @@ private Twig twig;
 						instance.transform.SetParent(parent.transform);
 						line = instance.GetComponent<LineRenderer>();
 						line.SetPosition(0, cursor.position);
+						line.SetPosition(1, cursor.position);
 						birth += interval;
 					}
 					else
