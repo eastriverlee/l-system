@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using System;
+using System.Linq;
+using static Global;
+using static Extension;
 
 namespace Tree
 {
@@ -37,27 +40,32 @@ namespace Tree
 	{
 		[SerializeField] private int iteration = 4;
 		[SerializeField] private float length = .05f;
-		[SerializeField] private float width = .02f;
+		[SerializeField] private float width = .2f;
 		[SerializeField] private float angle = 30;
 		[SerializeField] private GameObject branch;
 		[Range(0, 100)] public int speed = 100;
 		[Range(0f, 10f)] public float thicknessVariety = 3;
 		[Range(0f, 10f)] public int angleVariety = 10;
+		[Range(0f, 10f)] public float delay = 0;
 		[Range(0f, 1f)] public float age = 0;
-		private const string axiom = "x";
 		private States states;
 		public Rule[] rawRules = new Rule[] { 
 			new Rule('x',"[f-[[x]+x]+f[+fx]-x]"),
-			new Rule('f',"ff")
+				new Rule('f',"ff")
 		};
+		public string axiom = "x";
 		private Rules rules;
 		private string currentString = "";
 		private Vector3 root;
 		private int stringLength;
 		private float interval;
 		private bool isBranching = true;
+		private int i;
 		void Start()
 		{
+			i = time.Length;
+			time = time.Append(0).ToArray();
+			timeLimit = timeLimit.Append(0).ToArray();
 			root = transform.position;
 			states = new States();
 			rules = makeRules();
@@ -75,27 +83,29 @@ namespace Tree
 			return (rules);
 		}
 
-private bool stop = false;
+		private bool stop = false;
 		void Update()
 		{
-			if (!stop && Global.time < Global.timeLimit)
+			if (delay > 0)
+				delay -= Time.deltaTime;
+			else if (!stop && time[i] < timeLimit[i])
 			{
-				Global.time += Time.deltaTime;
-				age = Mathf.Min(1, Global.time / Global.timeLimit);
+				time[i] += Time.deltaTime;
+				age = Mathf.Min(1, time[i]/timeLimit[i]);
 			}
 			else
 			{
-				Global.time = Global.timeLimit * age;
+				time[i] = timeLimit[i] * age;
 				stop = true;
 			}
 		}
 
-private GameObject parent;
-private GameObject instance;
-private LineRenderer line;
-private Transform cursor;
-private float birth = 0;
-private Twig twig;
+		private GameObject parent;
+		private GameObject instance;
+		private LineRenderer line;
+		private Transform cursor;
+		private float birth = 0;
+		private Twig twig;
 
 		private void generate()
 		{
@@ -112,70 +122,68 @@ private Twig twig;
 		}
 		private void grow()
 		{
-			float resistance = 10f - angleVariety;
-			float maxWidth = width * thicknessVariety;
+			float resistance = angleVariety/10;
+			float minWidth = width / (thicknessVariety+1);
 			foreach (char c in currentString)
-			switch (c)
-			{
-				case '+':
-					cursor.Rotate(randomize(angle, resistance) * (randBool() ? Vector3.forward : Vector3.back));
-					prepareBranch();
-					break;
-				case '-':
-					cursor.Rotate(randomize(angle, resistance) * (randBool() ? Vector3.right : Vector3.left));
-					prepareBranch();
-					break;
-				case '[':
-					states.Push(new State(cursor, instance));
-					prepareBranch();
-					break;
-				case ']':
-					State state = states.Pop();
-					cursor.position = state.position;
-					cursor.rotation = state.rotation;
-					parent = state.instance;
-					birth = parent?.GetComponent<Twig>()?.endTime ?? 0;
-					prepareBranch();
-					break;
-				case 'f':
-					if (isBranching)
-					{
-						instance = Instantiate(branch);
-						twig = instance.GetComponent<Twig>();
-						line = instance.GetComponent<LineRenderer>();
-						line.SetPosition(0, cursor.position);
-						line.SetPosition(1, cursor.position);
-						line.SetWidth(width, width);
-						birth += interval;
-					}
-					else
-					{
-						twig = instance.GetComponent<Twig>();
-						line = instance.GetComponent<LineRenderer>();
-					}
-					instance.transform.SetParent(parent.transform, false);
-					cursor.Translate(Vector3.up * length);
-					twig.startTime = birth;
-					twig.endTime = birth + interval;
-					twig.maxWidth = maxWidth;
-					twig.destination = cursor.position;
-					isBranching = false;
-					Global.timeLimit = Mathf.Max(twig.endTime, Global.timeLimit);
-					parent = instance;
-					break;
-				default:
-					break;
-			};
+				switch (c)
+				{
+					case '+':
+						cursor.Rotate(randomize(angle, resistance) * (randomBool() ? Vector3.forward : Vector3.back));
+						prepareBranch();
+						break;
+					case '-':
+						cursor.Rotate(randomize(angle, resistance) * (randomBool() ? Vector3.right : Vector3.left));
+						prepareBranch();
+						break;
+					case '[':
+						states.Push(new State(cursor, instance));
+						prepareBranch();
+						break;
+					case ']':
+						State state = states.Pop();
+						cursor.position = state.position;
+						cursor.rotation = state.rotation;
+						parent = state.instance;
+						birth = parent?.GetComponent<Twig>()?.endTime ?? birth;
+						prepareBranch();
+						break;
+					case 'f':
+						if (isBranching)
+						{
+							instance = Instantiate(branch);
+							twig = instance.GetComponent<Twig>();
+							line = instance.GetComponent<LineRenderer>();
+							line.SetPosition(0, cursor.position);
+							line.SetPosition(1, cursor.position);
+							line.SetWidth(minWidth, minWidth);
+							birth += interval;
+						}
+						else
+						{
+							twig = instance.GetComponent<Twig>();
+							line = instance.GetComponent<LineRenderer>();
+						}
+						instance.transform.SetParent(parent.transform, false);
+						cursor.Translate(Vector3.up * length);
+						twig.startTime = birth;
+						twig.endTime = birth + interval;
+						twig.minWidth = minWidth;
+						twig.maxWidth = width;
+						twig.destination = cursor.position;
+						twig.i = i;
+						isBranching = false;
+						timeLimit[i] = Mathf.Max(twig.endTime, timeLimit[i]);
+						parent = instance;
+						break;
+					default:
+						break;
+				};
 		}
 		private void prepareBranch()
 		{
 			isBranching = true;
 		}
-		public static bool randBool()
-		{
-			return (UnityEngine.Random.value > .5);
-		}
-		public static float randomize(float value, float resistance = 0)
+		public static float randomize(float value, float resistance)
 		{
 			return ((value * UnityEngine.Random.value + value * resistance) / (resistance + 1));
 		}
